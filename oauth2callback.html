@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth Callback</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+</head>
+<body>
+    <h2>الرجاء الانتظار... جاري معالجة البيانات...</h2>
+
+    <script>
+        function handleAuthResult(authResult) {
+            if (authResult && !authResult.error) {
+                // تم تسجيل الدخول بنجاح
+                var accessToken = authResult.access_token;
+                console.log('تم الحصول على Access Token: ' + accessToken);
+
+                // يمكنك هنا إرسال الـ accessToken إلى الخادم أو التعامل معه حسب الحاجة
+                // على سبيل المثال:
+                localStorage.setItem("accessToken", accessToken);
+
+                // إعادة توجيه المستخدم إلى الصفحة الرئيسية أو صفحة البوست
+                window.location.href = "https://zainco94.github.io/blogger-tool"; // أضف الرابط المناسب
+            } else {
+                console.log('حدث خطأ أثناء تسجيل الدخول');
+            }
+        }
+
+        function checkAuth() {
+            gapi.auth2.getAuthInstance().isSignedIn.listen(handleAuthResult);
+            var authInstance = gapi.auth2.getAuthInstance();
+            if (authInstance.isSignedIn.get()) {
+                handleAuthResult(authInstance.currentUser.get().getAuthResponse());
+            }
+        }
+
+        function loadClient() {
+            gapi.load("client:auth2", function() {
+                gapi.auth2.init({
+                    client_id: 'YOUR_CLIENT_ID.apps.googleusercontent.com' // ضع Client ID هنا
+                }).then(checkAuth);
+            });
+        }
+
+        loadClient(); // تحميل OAuth Client
+    </script>
+</body>
+</html>
