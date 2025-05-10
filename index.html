@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>نموذج نشر البوست</title>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+  <h2>نموذج نشر بوست على بلوجر</h2>
+  <form id="postForm">
+    <label for="title">العنوان:</label>
+    <input type="text" id="title" required><br><br>
+    
+    <label for="poster">رابط البوستر:</label>
+    <input type="url" id="poster" required><br><br>
+    
+    <label for="video">رابط الفيديو:</label>
+    <input type="url" id="video" required><br><br>
+    
+    <button type="button" id="loginBtn">تسجيل الدخول باستخدام جوجل</button>
+    <button type="submit" id="publishBtn" disabled>نشر البوست</button>
+  </form>
+
+  <div id="status"></div>
+
+  <script>
+    var clientId = 'YOUR_CLIENT_ID.apps.googleusercontent.com'; // استبدل بـ Client ID الخاص بك
+    var apiKey = 'YOUR_API_KEY'; // استبدل بـ API Key الخاص بك
+    var blogId = 'YOUR_BLOG_ID'; // استبدل بـ Blog ID الخاص بك
+    var accessToken = localStorage.getItem("accessToken");
+
+    function handleAuthResult(authResult) {
+      if (authResult && !authResult.error) {
+        // تم تسجيل الدخول بنجاح
+        accessToken = authResult.access_token;
+        localStorage.setItem("accessToken", accessToken);
+        $('#status').text('تم تسجيل الدخول بنجاح');
+        $('#publishBtn').prop('disabled', false);
+      } else {
+        $('#status').text('حدث خطأ أثناء تسجيل الدخول');
+      }
+    }
+
+    function login() {
+      gapi.auth2.getAuthInstance().signIn().then(function() {
+        handleAuthResult(gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse());
+      });
+    }
+
+    function publishPost(title, poster, video) {
+      if (!accessToken) {
+        $('#status').text('لم يتم تسجيل الدخول');
+        return;
+      }
+
+      var postData = {
+        title: title,
+        content: `<img src="${poster}" alt="بوستر"><br><video controls><source src="${video}" type="video/mp4">تصفح الفيديو</video>`,
+        labels: ["فيلم"],
+        isDraft: false
+      };
+
+      $.ajax({
+        url: `https://www.googleapis.com/blogger/v3/blogs/${blogId}/posts/`,
+        type: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + accessToken
+        },
+        contentType: 'application/json',
+        data: JSON.stringify(postData),
+        success: function(response) {
+          $('#status').html(`تم نشر البوست بنجاح! <br><a href="${response.url}" target="_blank">اضغط هنا لعرض البوست</a>`);
+        },
+        error: function(error) {
+          $('#status').text('حدث خطأ أثناء نشر البوست');
+        }
+      });
+    }
+
+    // عند الضغط على زر تسجيل الدخول
+    $('#loginBtn').click(function() {
+      gapi.load('auth2', function() {
+        gapi.auth2.init({ client_id: clientId }).then(function() {
+          login();
+        });
+      });
+    });
+
+    // عند الضغط على زر نشر البوست
+    $('#postForm').submit(function(e) {
+      e.preventDefault();
+      var title = $('#title').val();
+      var poster = $('#poster').val();
+      var video = $('#video').val();
+      publishPost(title, poster, video);
+    });
+  </script>
+
+</body>
+</html>
